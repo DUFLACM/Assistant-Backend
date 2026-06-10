@@ -1,0 +1,18 @@
+node_modules/
+.env
+.env.*
+*.log
+
+# Runtime data
+/data/
+*.sqlite
+*.sqlite3
+*.db
+
+# OS/editor
+.DS_Store
+.vscode/
+.idea/
+
+# Package manager caches
+.pnpm-store/
