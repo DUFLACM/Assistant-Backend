@@ -816,6 +816,34 @@ export async function createLeaveRequest(activityId, memberId, reason) {
   )
 }
 
+export async function listActivityLeaveRequests(activityId) {
+  const rows = await query(
+    `SELECT lr.*, m.real_name AS realName, m.student_no AS studentNo, m.avatar_url AS avatarUrl, m.grade, m.class_name AS className
+     FROM activity_leave_requests lr
+     JOIN members m ON m.uid = lr.member_uid
+     WHERE lr.activity_id = ?
+     ORDER BY lr.created_at ASC`,
+    [activityId]
+  )
+  return rows.map(r => ({
+    id: r.id,
+    activityId: r.activity_id,
+    memberUid: r.member_uid,
+    reason: r.reason || '',
+    status: r.status,
+    realName: r.realName,
+    studentNo: r.studentNo,
+    avatarUrl: r.avatarUrl || '',
+    grade: r.grade || '',
+    className: r.className || '',
+    createdAt: r.created_at,
+  }))
+}
+
+export async function updateLeaveRequestStatus(leaveId, status) {
+  await query('UPDATE activity_leave_requests SET status = ? WHERE id = ?', [status, leaveId])
+}
+
 export async function createMaterialSubmission(activityId, memberId, attachment) {
   const id = crypto.randomUUID()
   await query(

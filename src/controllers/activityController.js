@@ -16,6 +16,8 @@ import {
   adminForceAbsence,
   adminProxyCheckin,
   endActivityCheckin,
+  listActivityLeaveRequests,
+  updateLeaveRequestStatus,
 } from '../data/db.js';
 import { badRequest, forbidden, notFound } from '../utils/errors.js';
 import { getCheckinInfo, verifyCheckinCode, generateCheckinCode } from '../services/checkinService.js';
@@ -449,5 +451,29 @@ export async function proxyCheckin({ params, body }) {
 export async function endCheckin({ params }) {
   const result = await endActivityCheckin(params.activityId)
   return { message: `签到结束，${result.markedAbsent} 人标记缺勤`, data: result }
+}
+
+/**
+ * GET /api/admin/activities/:id/leave-requests — 获取请假列表
+ */
+export async function getLeaveRequests({ params }) {
+  const list = await listActivityLeaveRequests(params.activityId)
+  return { data: { list } }
+}
+
+/**
+ * POST /api/admin/activities/:id/leave-requests/:leaveId/approve — 批准请假
+ */
+export async function approveLeaveRequest({ params }) {
+  await updateLeaveRequestStatus(params.leaveId, '已批准')
+  return { message: '已批准请假' }
+}
+
+/**
+ * POST /api/admin/activities/:id/leave-requests/:leaveId/reject — 拒绝请假
+ */
+export async function rejectLeaveRequest({ params }) {
+  await updateLeaveRequestStatus(params.leaveId, '已拒绝')
+  return { message: '已拒绝请假' }
 }
 

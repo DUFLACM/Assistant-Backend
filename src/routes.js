@@ -19,6 +19,9 @@ import {
   forceAbsence,
   proxyCheckin,
   endCheckin,
+  getLeaveRequests,
+  approveLeaveRequest,
+  rejectLeaveRequest,
 } from './controllers/activityController.js';
 import { applyContest, listContests } from './controllers/contestController.js';
 import {
@@ -245,6 +248,24 @@ export const routes = [
     pattern: /^\/api\/admin\/activities\/([^/]+)\/end-checkin$/,
     keys: ['activityId'],
     handler: withAuth(endCheckin),
+  },
+  {
+    method: 'GET',
+    pattern: /^\/api\/admin\/activities\/([^/]+)\/leave-requests$/,
+    keys: ['activityId'],
+    handler: withAuth(getLeaveRequests),
+  },
+  {
+    method: 'POST',
+    pattern: /^\/api\/admin\/activities\/([^/]+)\/leave-requests\/([^/]+)\/approve$/,
+    keys: ['activityId', 'leaveId'],
+    handler: withAuth(approveLeaveRequest),
+  },
+  {
+    method: 'POST',
+    pattern: /^\/api\/admin\/activities\/([^/]+)\/leave-requests\/([^/]+)\/reject$/,
+    keys: ['activityId', 'leaveId'],
+    handler: withAuth(rejectLeaveRequest),
   },
   {
     method: 'GET',
