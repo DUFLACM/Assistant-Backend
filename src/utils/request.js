@@ -8,7 +8,7 @@ export function parseJsonBody(req) {
 
     req.on('data', (chunk) => {
       raw += chunk;
-      if (raw.length > 1024 * 1024) {
+      if (raw.length > 5 * 1024 * 1024) {
         const error = new Error('请求体过大');
         error.status = 413;
         error.code = 'PAYLOAD_TOO_LARGE';

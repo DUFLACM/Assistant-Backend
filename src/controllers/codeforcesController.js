@@ -4,8 +4,8 @@ import { badRequest, notFound, tooManyRequests } from '../utils/errors.js';
 const UPDATE_LIMIT_PER_DAY = 5;
 const UPDATE_INTERVAL_MS = 10 * 60 * 1000;
 
-function assertMember(memberId) {
-  const member = findMember(memberId);
+async function assertMember(memberId) {
+  const member = await findMember(memberId);
 
   if (!member) {
     throw notFound('成员不存在');
@@ -103,8 +103,8 @@ async function fetchCodeforcesUser(handle) {
 }
 
 async function refreshAccount(memberId, handle) {
-  const member = assertMember(memberId);
-  const existingAccount = getPlatformAccount(member.id, 'codeforces');
+  const member = await assertMember(memberId);
+  const existingAccount = await getPlatformAccount(member.id, 'codeforces');
 
   assertCanUpdate(existingAccount);
 
@@ -112,7 +112,7 @@ async function refreshAccount(memberId, handle) {
   const now = Date.now();
   const updateLogs = [...getTodayUpdates(existingAccount, now), now];
 
-  const account = upsertPlatformAccount(member.id, 'codeforces', user.handle, {
+  const account = await upsertPlatformAccount(member.id, 'codeforces', user.handle, {
     handle: user.handle,
     rating: user.rating ?? null,
     maxRating: user.maxRating ?? null,
@@ -126,16 +126,16 @@ async function refreshAccount(memberId, handle) {
   return serializeAccount(account);
 }
 
-export function getCodeforcesAccount({ params }) {
-  const member = assertMember(params.memberId);
+export async function getCodeforcesAccount({ params }) {
+  const member = await assertMember(params.memberId);
 
   return {
-    data: serializeAccount(getPlatformAccount(member.id, 'codeforces')),
+    data: serializeAccount(await getPlatformAccount(member.id, 'codeforces')),
   };
 }
 
 export async function bindCodeforcesAccount({ body, params }) {
-  assertMember(params.memberId);
+  await assertMember(params.memberId);
 
   const handle = normalizeHandle(body?.handle);
   assertHandle(handle);
@@ -146,9 +146,9 @@ export async function bindCodeforcesAccount({ body, params }) {
 }
 
 export async function updateCodeforcesAccount({ params }) {
-  const member = assertMember(params.memberId);
+  const member = await assertMember(params.memberId);
 
-  const account = getPlatformAccount(member.id, 'codeforces');
+  const account = await getPlatformAccount(member.id, 'codeforces');
 
   if (!account) {
     throw badRequest('请先绑定 Codeforces 用户名');

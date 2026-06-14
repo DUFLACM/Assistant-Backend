@@ -4,8 +4,8 @@ import { badRequest, notFound, tooManyRequests } from '../utils/errors.js';
 const UPDATE_LIMIT_PER_DAY = 5;
 const UPDATE_INTERVAL_MS = 10 * 60 * 1000;
 
-function assertMember(memberId) {
-  const member = findMember(memberId);
+async function assertMember(memberId) {
+  const member = await findMember(memberId);
 
   if (!member) {
     throw notFound('成员不存在');
@@ -123,8 +123,8 @@ async function fetchNowcoderUser(uid) {
 }
 
 async function refreshAccount(memberId, uid) {
-  const member = assertMember(memberId);
-  const existingAccount = getPlatformAccount(member.id, 'nowcoder');
+  const member = await assertMember(memberId);
+  const existingAccount = await getPlatformAccount(member.id, 'nowcoder');
 
   assertCanUpdate(existingAccount);
 
@@ -132,7 +132,7 @@ async function refreshAccount(memberId, uid) {
   const now = Date.now();
   const updateLogs = [...getTodayUpdates(existingAccount, now), now];
 
-  const account = upsertPlatformAccount(member.id, 'nowcoder', user.uid, {
+  const account = await upsertPlatformAccount(member.id, 'nowcoder', user.uid, {
     ...user,
     updatedAt: new Date(now).toISOString(),
   }, updateLogs);
@@ -140,16 +140,16 @@ async function refreshAccount(memberId, uid) {
   return serializeAccount(account);
 }
 
-export function getNowcoderAccount({ params }) {
-  const member = assertMember(params.memberId);
+export async function getNowcoderAccount({ params }) {
+  const member = await assertMember(params.memberId);
 
   return {
-    data: serializeAccount(getPlatformAccount(member.id, 'nowcoder')),
+    data: serializeAccount(await getPlatformAccount(member.id, 'nowcoder')),
   };
 }
 
 export async function bindNowcoderAccount({ body, params }) {
-  assertMember(params.memberId);
+  await assertMember(params.memberId);
 
   const uid = normalizeUid(body?.uid);
   assertUid(uid);
@@ -160,9 +160,9 @@ export async function bindNowcoderAccount({ body, params }) {
 }
 
 export async function updateNowcoderAccount({ params }) {
-  const member = assertMember(params.memberId);
+  const member = await assertMember(params.memberId);
 
-  const account = getPlatformAccount(member.id, 'nowcoder');
+  const account = await getPlatformAccount(member.id, 'nowcoder');
 
   if (!account) {
     throw badRequest('请先绑定牛客用户 ID');

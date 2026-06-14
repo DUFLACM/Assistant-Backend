@@ -1,33 +1,66 @@
-import { listActivities, listPointLogs } from '../data/db.js';
+import { getMember, listActivities, listPointLogs, listAnnouncements } from '../data/db.js';
 import { buildRanking, getMemberPointSummary } from '../services/pointsService.js';
 
-const defaultMemberId = '10001';
+export async function getHubSummary(ctx) {
+  const memberUid = ctx.user.memberUid;
+  const member = await getMember(memberUid);
 
-export function getHubSummary({ query }) {
-  const memberId = query.memberId || defaultMemberId;
-  const summary = getMemberPointSummary(memberId);
-  const ranking = buildRanking();
-  const activities = listActivities();
-  const pointLogs = listPointLogs(memberId);
+  if (!member) {
+    throw { status: 401, code: 'UNAUTHORIZED', message: '账号已不存在' };
+  }
+
+  const summary = await getMemberPointSummary(memberUid);
+  const ranking = await buildRanking();
+  const activities = await listActivities();
+  const pointLogs = await listPointLogs(memberUid);
+  const announcementList = await listAnnouncements();
+
+  // Pending-point logs (audit_status = 'pending')
+  const pendingLogs = pointLogs.filter(l => l.auditStatus === 'pending');
+
+  // Recent activities (newest 4)
+  const recentActivities = activities.slice(0, 4).map(a => ({
+    id: a.id,
+    type: a.type || '活动',
+    title: a.title,
+    time: a.time,
+    status: a.status || '进行中',
+  }));
+
+  // Top-3 ranking for "社内排名"
+  const top3 = ranking.slice(0, 3).map(r => ({
+    name: r.name,
+    points: r.effectivePoints,
+    rank: r.rank,
+  }));
 
   return {
     data: {
-      memberId,
-      points: summary.effectivePoints,
-      rank: summary.rank,
-      monthRawPoints: summary.monthRawPoints,
-      pendingTasks: [
-        { id: 'task-checkin', title: '成员大会签到', meta: '18:50 截止', status: '待完成' },
-        { id: 'task-contest', title: '周赛报名确认', meta: '周六 19:30', status: '报名中' },
-        { id: 'task-solution', title: '补交题解链接', meta: '可获得 4 积分', status: '待审核' },
-      ],
-      recentActivities: activities.slice(0, 2),
-      notices: [
-        { id: 'notice-points', title: '4 月积分公示', desc: '公示期剩余 32 小时，可提交申诉' },
-        { id: 'notice-icpc', title: 'ICPC 网络赛拟推荐名单', desc: '冻结积分已锁定，候补顺序已生成' },
-      ],
-      latestPointLogs: pointLogs.slice(0, 4),
-      ranking: ranking.slice(0, 5),
+      member: {
+        uid: member.uid,
+        name: member.realName || member.name,
+        role: member.role || '预备社员',
+        activity: member.activity || 0,
+        isAdmin: member.isAdmin || false,
+        gravatarUrl: member.gravatarUrl || '',
+        avatarUrl: member.avatarUrl || '',
+        email: member.email || '',
+      },
+      stats: {
+        points: summary.effectivePoints,
+        rank: summary.rank || '--',
+        monthPoints: summary.monthRawPoints || 0,
+        pending: pendingLogs.length,
+      },
+      ranking: top3,
+      recentActivities,
+      announcements: announcementList,
+      pendingTasks: pendingLogs.map(l => ({
+        id: l.id,
+        title: l.source || l.type,
+        meta: `${l.points} 分`,
+        status: '待审核',
+      })),
     },
   };
 }
